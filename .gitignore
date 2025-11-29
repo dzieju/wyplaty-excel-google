@@ -38,6 +38,7 @@ Thumbs.db
 
 # Project specific
 uploads/
+instance/
 *.json
 !package.json
 !package-lock.json
