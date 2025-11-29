@@ -25,8 +25,8 @@ service_account_data = {}
 manager = Manager()
 jobs = manager.dict()
 
-UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), "uploads")
-os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+# Track running processes for cleanup
+running_processes = {}
 
 
 def get_drive_service():
@@ -240,6 +240,7 @@ def start_verify():
         target=verification_worker, args=(job_id, service_account_data.copy(), jobs)
     )
     process.start()
+    running_processes[job_id] = process
 
     return jsonify({"job_id": job_id, "status": "started"})
 
@@ -251,6 +252,14 @@ def verify_status(job_id):
         return jsonify({"error": "Job not found"}), 404
 
     job_data = dict(jobs[job_id])
+
+    # Clean up completed processes
+    if job_id in running_processes:
+        process = running_processes[job_id]
+        if not process.is_alive():
+            process.join(timeout=1)
+            del running_processes[job_id]
+
     return jsonify({"job_id": job_id, **job_data})
 
 
@@ -261,4 +270,7 @@ def index():
 
 
 if __name__ == "__main__":
-    app.run(debug=True, host="0.0.0.0", port=5000)
+    debug_mode = os.environ.get("FLASK_DEBUG", "false").lower() == "true"
+    host = os.environ.get("FLASK_HOST", "127.0.0.1")
+    port = int(os.environ.get("FLASK_PORT", "5000"))
+    app.run(debug=debug_mode, host=host, port=port)

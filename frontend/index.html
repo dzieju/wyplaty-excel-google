@@ -275,6 +275,14 @@
             }
         });
 
+        // Helper function to escape HTML entities
+        function escapeHtml(text) {
+            if (text === null || text === undefined) return '';
+            const div = document.createElement('div');
+            div.textContent = String(text);
+            return div.innerHTML;
+        }
+
         // Upload file
         async function handleFile(file) {
             const formData = new FormData();
@@ -292,17 +300,17 @@
                 if (data.success) {
                     showStatus(uploadStatus, 'success', '✅ Service account uploaded successfully!');
                     saInfo.innerHTML = `
-                        <div><span class="label">Project ID:</span><div class="value">${data.project_id}</div></div>
-                        <div><span class="label">Client Email:</span><div class="value">${data.client_email}</div></div>
+                        <div><span class="label">Project ID:</span><div class="value">${escapeHtml(data.project_id)}</div></div>
+                        <div><span class="label">Client Email:</span><div class="value">${escapeHtml(data.client_email)}</div></div>
                     `;
                     saInfo.classList.remove('hidden');
                     listFilesBtn.disabled = false;
                     verifyBtn.disabled = false;
                 } else {
-                    showStatus(uploadStatus, 'error', `❌ ${data.error}`);
+                    showStatus(uploadStatus, 'error', `❌ ${escapeHtml(data.error)}`);
                 }
             } catch (error) {
-                showStatus(uploadStatus, 'error', `❌ Connection error: ${error.message}`);
+                showStatus(uploadStatus, 'error', `❌ Connection error: ${escapeHtml(error.message)}`);
             }
         }
 
@@ -316,22 +324,22 @@
                 const data = await response.json();
 
                 if (data.error) {
-                    showStatus(filesStatus, 'error', `❌ ${data.error}`);
+                    showStatus(filesStatus, 'error', `❌ ${escapeHtml(data.error)}`);
                 } else {
-                    showStatus(filesStatus, 'success', `✅ Found ${data.count} file(s)`);
+                    showStatus(filesStatus, 'success', `✅ Found ${escapeHtml(data.count)} file(s)`);
                     
                     if (data.files.length > 0) {
                         filesList.innerHTML = data.files.map(file => `
                             <div class="file-item">
                                 <div class="icon">📊</div>
-                                <div class="name">${file.name}</div>
+                                <div class="name">${escapeHtml(file.name)}</div>
                             </div>
                         `).join('');
                         filesList.classList.remove('hidden');
                     }
                 }
             } catch (error) {
-                showStatus(filesStatus, 'error', `❌ Connection error: ${error.message}`);
+                showStatus(filesStatus, 'error', `❌ Connection error: ${escapeHtml(error.message)}`);
             }
         });
 
@@ -363,16 +371,16 @@
                 const data = await response.json();
 
                 if (data.status === 'running' || data.status === 'pending') {
-                    showStatus(verifyStatus, 'pending', `<span class="loader"></span>${data.step || 'Processing...'}`);
+                    showStatus(verifyStatus, 'pending', `<span class="loader"></span>${escapeHtml(data.step) || 'Processing...'}`);
                     setTimeout(() => pollStatus(jobId), 1000);
                 } else if (data.status === 'completed') {
-                    showStatus(verifyStatus, 'success', `✅ ${data.result.message}`);
+                    showStatus(verifyStatus, 'success', `✅ ${escapeHtml(data.result.message)}`);
                     displayResults(data.result);
                 } else if (data.status === 'error') {
-                    showStatus(verifyStatus, 'error', `❌ ${data.error}`);
+                    showStatus(verifyStatus, 'error', `❌ ${escapeHtml(data.error)}`);
                 }
             } catch (error) {
-                showStatus(verifyStatus, 'error', `❌ Connection error: ${error.message}`);
+                showStatus(verifyStatus, 'error', `❌ Connection error: ${escapeHtml(error.message)}`);
             }
         }
 
@@ -388,16 +396,16 @@
             const rows = result.sample_data;
 
             let html = `
-                <p><strong>Exported File:</strong> ${result.exported_file}</p>
-                <p><strong>Total Rows:</strong> ${result.row_count}</p>
+                <p><strong>Exported File:</strong> ${escapeHtml(result.exported_file)}</p>
+                <p><strong>Total Rows:</strong> ${escapeHtml(result.row_count)}</p>
                 <p><strong>Sample Data (first 5 rows):</strong></p>
                 <table>
                     <thead>
-                        <tr>${columns.map(col => `<th>${col}</th>`).join('')}</tr>
+                        <tr>${columns.map(col => `<th>${escapeHtml(col)}</th>`).join('')}</tr>
                     </thead>
                     <tbody>
                         ${rows.map(row => `
-                            <tr>${columns.map(col => `<td>${row[col] !== null && row[col] !== undefined ? row[col] : ''}</td>`).join('')}</tr>
+                            <tr>${columns.map(col => `<td>${escapeHtml(row[col])}</td>`).join('')}</tr>
                         `).join('')}
                     </tbody>
                 </table>
