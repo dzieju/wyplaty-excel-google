@@ -1,0 +1,418 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Google Sheets Access Verification</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+        }
+        .card h2 {
+            color: #333;
+            margin-bottom: 16px;
+            font-size: 1.25rem;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .card h2 .step {
+            background: #667eea;
+            color: white;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+        }
+        .upload-area {
+            border: 2px dashed #ccc;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+        .upload-area:hover {
+            border-color: #667eea;
+            background: #f8f9ff;
+        }
+        .upload-area.dragover {
+            border-color: #667eea;
+            background: #e8ebff;
+        }
+        .upload-area input[type="file"] {
+            display: none;
+        }
+        .upload-area p {
+            color: #666;
+            margin-bottom: 10px;
+        }
+        .upload-area .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 8px;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin-top: 16px;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .status.info {
+            background: #cce5ff;
+            color: #004085;
+            border: 1px solid #b8daff;
+        }
+        .status.pending {
+            background: #fff3cd;
+            color: #856404;
+            border: 1px solid #ffeeba;
+        }
+        .files-list {
+            max-height: 300px;
+            overflow-y: auto;
+            margin-top: 16px;
+        }
+        .file-item {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .file-item:last-child {
+            border-bottom: none;
+        }
+        .file-item .icon {
+            font-size: 24px;
+        }
+        .file-item .name {
+            flex: 1;
+            font-weight: 500;
+        }
+        .result-data {
+            margin-top: 16px;
+        }
+        .result-data table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 0.9rem;
+        }
+        .result-data th, .result-data td {
+            padding: 8px 12px;
+            text-align: left;
+            border: 1px solid #ddd;
+        }
+        .result-data th {
+            background: #667eea;
+            color: white;
+        }
+        .result-data tr:nth-child(even) {
+            background: #f8f9ff;
+        }
+        .loader {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .hidden {
+            display: none;
+        }
+        .sa-info {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .sa-info .label {
+            font-weight: 600;
+            color: #333;
+        }
+        .sa-info .value {
+            font-family: monospace;
+            background: #f5f5f5;
+            padding: 8px;
+            border-radius: 4px;
+            word-break: break-all;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔐 Google Sheets Access Verification</h1>
+        
+        <!-- Step 1: Upload Service Account -->
+        <div class="card">
+            <h2><span class="step">1</span> Upload Service Account JSON</h2>
+            <div class="upload-area" id="uploadArea">
+                <div class="icon">📄</div>
+                <p>Drag and drop your Service Account JSON file here</p>
+                <p>or click to browse</p>
+                <input type="file" id="fileInput" accept=".json">
+            </div>
+            <div id="uploadStatus" class="hidden"></div>
+            <div id="saInfo" class="hidden sa-info"></div>
+        </div>
+
+        <!-- Step 2: List Files -->
+        <div class="card">
+            <h2><span class="step">2</span> List Accessible Files</h2>
+            <p style="color: #666; margin-bottom: 16px;">View all Google Sheets accessible by the service account.</p>
+            <button class="btn" id="listFilesBtn" disabled>List Files</button>
+            <div id="filesStatus" class="hidden"></div>
+            <div id="filesList" class="files-list hidden"></div>
+        </div>
+
+        <!-- Step 3: Verify Access -->
+        <div class="card">
+            <h2><span class="step">3</span> Verify Access & Export</h2>
+            <p style="color: #666; margin-bottom: 16px;">Start a verification job that exports the first Google Sheet to XLSX and parses it with pandas.</p>
+            <button class="btn" id="verifyBtn" disabled>Start Verification</button>
+            <div id="verifyStatus" class="hidden"></div>
+            <div id="resultData" class="result-data hidden"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:5000';
+        
+        // DOM Elements
+        const uploadArea = document.getElementById('uploadArea');
+        const fileInput = document.getElementById('fileInput');
+        const uploadStatus = document.getElementById('uploadStatus');
+        const saInfo = document.getElementById('saInfo');
+        const listFilesBtn = document.getElementById('listFilesBtn');
+        const filesStatus = document.getElementById('filesStatus');
+        const filesList = document.getElementById('filesList');
+        const verifyBtn = document.getElementById('verifyBtn');
+        const verifyStatus = document.getElementById('verifyStatus');
+        const resultData = document.getElementById('resultData');
+
+        // Upload area events
+        uploadArea.addEventListener('click', () => fileInput.click());
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.classList.add('dragover');
+        });
+        uploadArea.addEventListener('dragleave', () => {
+            uploadArea.classList.remove('dragover');
+        });
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                handleFile(e.dataTransfer.files[0]);
+            }
+        });
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length) {
+                handleFile(e.target.files[0]);
+            }
+        });
+
+        // Upload file
+        async function handleFile(file) {
+            const formData = new FormData();
+            formData.append('file', file);
+
+            showStatus(uploadStatus, 'info', '<span class="loader"></span>Uploading...');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/upload-sa`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+
+                if (data.success) {
+                    showStatus(uploadStatus, 'success', '✅ Service account uploaded successfully!');
+                    saInfo.innerHTML = `
+                        <div><span class="label">Project ID:</span><div class="value">${data.project_id}</div></div>
+                        <div><span class="label">Client Email:</span><div class="value">${data.client_email}</div></div>
+                    `;
+                    saInfo.classList.remove('hidden');
+                    listFilesBtn.disabled = false;
+                    verifyBtn.disabled = false;
+                } else {
+                    showStatus(uploadStatus, 'error', `❌ ${data.error}`);
+                }
+            } catch (error) {
+                showStatus(uploadStatus, 'error', `❌ Connection error: ${error.message}`);
+            }
+        }
+
+        // List files
+        listFilesBtn.addEventListener('click', async () => {
+            showStatus(filesStatus, 'info', '<span class="loader"></span>Loading files...');
+            filesList.classList.add('hidden');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/files`);
+                const data = await response.json();
+
+                if (data.error) {
+                    showStatus(filesStatus, 'error', `❌ ${data.error}`);
+                } else {
+                    showStatus(filesStatus, 'success', `✅ Found ${data.count} file(s)`);
+                    
+                    if (data.files.length > 0) {
+                        filesList.innerHTML = data.files.map(file => `
+                            <div class="file-item">
+                                <div class="icon">📊</div>
+                                <div class="name">${file.name}</div>
+                            </div>
+                        `).join('');
+                        filesList.classList.remove('hidden');
+                    }
+                }
+            } catch (error) {
+                showStatus(filesStatus, 'error', `❌ Connection error: ${error.message}`);
+            }
+        });
+
+        // Start verification
+        verifyBtn.addEventListener('click', async () => {
+            showStatus(verifyStatus, 'info', '<span class="loader"></span>Starting verification...');
+            resultData.classList.add('hidden');
+
+            try {
+                const response = await fetch(`${API_BASE}/api/start-verify`, {
+                    method: 'POST'
+                });
+                const data = await response.json();
+
+                if (data.error) {
+                    showStatus(verifyStatus, 'error', `❌ ${data.error}`);
+                } else {
+                    pollStatus(data.job_id);
+                }
+            } catch (error) {
+                showStatus(verifyStatus, 'error', `❌ Connection error: ${error.message}`);
+            }
+        });
+
+        // Poll job status
+        async function pollStatus(jobId) {
+            try {
+                const response = await fetch(`${API_BASE}/api/verify-status/${jobId}`);
+                const data = await response.json();
+
+                if (data.status === 'running' || data.status === 'pending') {
+                    showStatus(verifyStatus, 'pending', `<span class="loader"></span>${data.step || 'Processing...'}`);
+                    setTimeout(() => pollStatus(jobId), 1000);
+                } else if (data.status === 'completed') {
+                    showStatus(verifyStatus, 'success', `✅ ${data.result.message}`);
+                    displayResults(data.result);
+                } else if (data.status === 'error') {
+                    showStatus(verifyStatus, 'error', `❌ ${data.error}`);
+                }
+            } catch (error) {
+                showStatus(verifyStatus, 'error', `❌ Connection error: ${error.message}`);
+            }
+        }
+
+        // Display verification results
+        function displayResults(result) {
+            if (!result.sample_data || result.sample_data.length === 0) {
+                resultData.innerHTML = `<p>No data to display.</p>`;
+                resultData.classList.remove('hidden');
+                return;
+            }
+
+            const columns = result.columns;
+            const rows = result.sample_data;
+
+            let html = `
+                <p><strong>Exported File:</strong> ${result.exported_file}</p>
+                <p><strong>Total Rows:</strong> ${result.row_count}</p>
+                <p><strong>Sample Data (first 5 rows):</strong></p>
+                <table>
+                    <thead>
+                        <tr>${columns.map(col => `<th>${col}</th>`).join('')}</tr>
+                    </thead>
+                    <tbody>
+                        ${rows.map(row => `
+                            <tr>${columns.map(col => `<td>${row[col] !== null && row[col] !== undefined ? row[col] : ''}</td>`).join('')}</tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            `;
+
+            resultData.innerHTML = html;
+            resultData.classList.remove('hidden');
+        }
+
+        // Helper function to show status
+        function showStatus(element, type, message) {
+            element.className = `status ${type}`;
+            element.innerHTML = message;
+            element.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
