@@ -65,8 +65,7 @@ if (-not (Has-Command "node")) {
   if (Test-Path package-lock.json) {
     Remove-Item -Force package-lock.json -ErrorAction SilentlyContinue
   }
-  npm config set optional false
-  npm install --no-optional
+  npm install --omit=optional
   Pop-Location
 }
 
