@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "description": "Configuration UI for Google Sheets access verification",
   "type": "module",
+  "overrides": {
+    "rollup": "npm:@rollup/wasm-node"
+  },
   "scripts": {
     "dev": "vite",
     "build": "vite build",
